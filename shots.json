@@ -1,6 +1,1 @@
-[
-  { "name": "1-cover", "url": "app/index.html?shot=1-cover", "width": 1080, "height": 1080 },
-  { "name": "2-editor", "url": "app/index.html?shot=2-editor", "width": 1080, "height": 1080 },
-  { "name": "3-cover", "url": "app/index.html?shot=3-cover", "width": 1080, "height": 1080 },
-  { "name": "4-cover", "url": "app/index.html?shot=4-cover", "width": 1080, "height": 1350 }
-]
+{ "shots": [ {"name":"1-cover","width":1080,"height":1080,"shot":"1-cover"}, {"name":"2-editor","width":1080,"height":1080,"shot":"2-editor"}, {"name":"3-cover","width":1080,"height":1080,"shot":"3-cover"}, {"name":"4-cover","width":1024,"height":1280,"shot":"4-cover"} ] }

@@ -1,86 +1,87 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
+  <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
   <title>Vice Pop Studio</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <div class="page">
-    <header class="masthead">
-      <div class="masthead-copy">
-        <p class="eyebrow">Cover Art Workshop</p>
-        <h1 class="title">Vice Pop Studio</h1>
+    <header class="site-header">
+      <div class="brand">
+        <p class="eyebrow">COVER ART WORKSHOP</p>
+        <h1 class="site-title">Vice Pop Studio</h1>
         <p class="tagline">Seven panels. One photo. A whole sunset worth of attitude.</p>
       </div>
-      <div class="seal-badge" aria-label="Vice Pop, established 2026">
-        <span class="seal-badge-line">Vice Pop</span>
-        <span class="seal-badge-line seal-badge-line--est">Est. 2026</span>
+      <div class="seal" aria-label="Vice Pop, established 2026">
+        <span class="seal-name">VICE POP</span>
+        <span class="seal-year">EST. 2026</span>
       </div>
     </header>
 
-    <main class="studio">
-      <section class="panel panel--preview" aria-labelledby="previewHeading">
-        <div class="panel-heading">
-          <h2 id="previewHeading" class="section-label">Poster Preview</h2>
-          <span class="preview-scale">540 x 540 - half scale</span>
+    <main class="workspace">
+      <section class="panel preview-panel" aria-labelledby="preview-title">
+        <div class="panel-header">
+          <h2 id="preview-title" class="panel-title">POSTER PREVIEW</h2>
+          <span class="panel-meta">LIVE CANVAS</span>
         </div>
-
-        <div class="poster-frame">
-          <canvas id="poster" width="1080" height="1080" aria-label="Vice Pop poster preview"></canvas>
+        <div class="canvas-frame">
+          <canvas id="poster" width="1080" height="1080" aria-label="Live preview of the generated cover art"></canvas>
         </div>
-
-        <p class="preview-caption">
-          Your photo appears in the arched hero panel and in the six panels below.
-          Captions and tags are drawn directly onto the poster.
-        </p>
+        <p class="preview-caption">Your photo appears in the arched hero panel and in the six panels below. Captions and tags are drawn directly onto the poster.</p>
       </section>
 
-      <section class="panel panel--controls" aria-labelledby="controlsHeading">
-        <div class="panel-heading">
-          <h2 id="controlsHeading" class="section-label">Studio Controls</h2>
+      <section class="panel controls-panel" aria-labelledby="controls-title">
+        <div class="panel-header">
+          <h2 id="controls-title" class="panel-title">STUDIO CONTROLS</h2>
+          <span class="panel-meta">OFFLINE</span>
         </div>
 
         <div class="control-group">
-          <label class="control-label" for="photoInput">Photos</label>
-          <input id="photoInput" class="file-input" type="file" accept="image/*">
+          <h3 class="control-label">PHOTOS</h3>
+          <div class="file-picker">
+            <input class="file-input" id="photo-input" type="file" accept="image/*">
+            <label class="file-button" for="photo-input">Choose file</label>
+            <span class="file-hint">PNG, JPG or WEBP</span>
+          </div>
           <p class="control-note">Images never leave this machine.</p>
         </div>
 
         <div class="control-group">
-          <label class="control-label" for="captionInput">Caption</label>
-          <input id="captionInput" class="text-input" type="text" value="Boulevard Queen" autocomplete="off" spellcheck="false">
+          <label class="control-label" for="caption">CAPTION</label>
+          <input class="text-input text-input-hero" id="caption" name="caption" type="text" value="Sunset Heist" maxlength="48" autocomplete="off">
         </div>
 
         <div class="control-group">
-          <label class="control-label" for="subtitleInput">Subtitle</label>
-          <input id="subtitleInput" class="text-input" type="text" value="A story in seven frames" autocomplete="off" spellcheck="false">
+          <label class="control-label" for="subtitle">SUBTITLE</label>
+          <input class="text-input" id="subtitle" name="subtitle" type="text" value="A story in seven frames" maxlength="64" autocomplete="off">
         </div>
 
-        <div class="control-group">
-          <span class="control-label" id="gradeLabel">Colour Grade</span>
-          <div class="pill-row" role="group" aria-labelledby="gradeLabel">
+        <fieldset class="control-group">
+          <legend class="control-label">COLOUR GRADE</legend>
+          <div class="button-grid button-grid-grades" role="group" aria-label="Colour grade">
             <button class="pill is-active" type="button" data-grade="vice-sunset" aria-pressed="true">Vice Sunset</button>
             <button class="pill" type="button" data-grade="neon-night" aria-pressed="false">Neon Night</button>
             <button class="pill" type="button" data-grade="palm-dusk" aria-pressed="false">Palm Dusk</button>
             <button class="pill" type="button" data-grade="chrome-heat" aria-pressed="false">Chrome Heat</button>
             <button class="pill" type="button" data-grade="mono-noir" aria-pressed="false">Mono Noir</button>
           </div>
-        </div>
+        </fieldset>
 
-        <div class="control-group">
-          <span class="control-label" id="sizeLabel">Export Size</span>
-          <div class="pill-row" role="group" aria-labelledby="sizeLabel">
-            <button class="pill is-active" type="button" data-size="1080x1080" aria-pressed="true">1080 &times; 1080</button>
-            <button class="pill" type="button" data-size="1080x1350" aria-pressed="false">1080 &times; 1350</button>
-            <button class="pill" type="button" data-size="1920x1080" aria-pressed="false">1920 &times; 1080</button>
+        <fieldset class="control-group">
+          <legend class="control-label">EXPORT SIZE</legend>
+          <div class="button-grid button-grid-sizes" role="group" aria-label="Export size">
+            <button class="pill is-active" type="button" data-size="1080x1080" aria-pressed="true">1080 x 1080</button>
+            <button class="pill" type="button" data-size="1080x1350" aria-pressed="false">1080 x 1350</button>
+            <button class="pill" type="button" data-size="1920x1080" aria-pressed="false">1920 x 1080</button>
           </div>
-        </div>
+        </fieldset>
 
-        <div class="action-row">
-          <button id="shuffleBtn" class="btn btn--shuffle" type="button">Shuffle layout</button>
-          <button id="exportBtn" class="btn btn--export" type="button">Export PNG</button>
+        <div class="actions">
+          <button class="action-button action-shuffle" id="shuffle-button" type="button">SHUFFLE LAYOUT</button>
+          <button class="action-button action-export" id="export-button" type="button">EXPORT PNG</button>
         </div>
       </section>
     </main>

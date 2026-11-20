@@ -1,98 +1,50 @@
-export const LAYOUTS = [
-  {
-    name: 'Classic Grid',
-    heroArch: 0.30,
-    tilt: 1.2,
-    gap: 18,
-    offsets: [
-      { dx: 0, dy: 0 },
-      { dx: 2, dy: -1 },
-      { dx: -2, dy: 1 },
-      { dx: 1, dy: 2 },
-      { dx: -1, dy: -2 },
-      { dx: 0, dy: 0 },
-    ],
-  },
-  {
-    name: 'Hand Placed',
-    heroArch: 0.42,
-    tilt: 2.6,
-    gap: 22,
-    offsets: [
-      { dx: -4, dy: 3 },
-      { dx: 5, dy: -2 },
-      { dx: -3, dy: -4 },
-      { dx: 4, dy: 4 },
-      { dx: -5, dy: 1 },
-      { dx: 2, dy: -3 },
-    ],
-  },
-  {
-    name: 'Postcard Scatter',
-    heroArch: 0.24,
-    tilt: 3.4,
-    gap: 26,
-    offsets: [
-      { dx: 6, dy: -3 },
-      { dx: -5, dy: 4 },
-      { dx: 3, dy: 5 },
-      { dx: -6, dy: -2 },
-      { dx: 4, dy: -5 },
-      { dx: -2, dy: 3 },
-    ],
-  },
-  {
-    name: 'Magazine Drift',
-    heroArch: 0.50,
-    tilt: 1.8,
-    gap: 14,
-    offsets: [
-      { dx: 3, dy: 2 },
-      { dx: -2, dy: 3 },
-      { dx: 1, dy: -2 },
-      { dx: -3, dy: -3 },
-      { dx: 2, dy: 1 },
-      { dx: 0, dy: 0 },
-    ],
-  },
-  {
-    name: 'Neon Bounce',
-    heroArch: 0.36,
-    tilt: 2.2,
-    gap: 20,
-    offsets: [
-      { dx: -2, dy: -4 },
-      { dx: 4, dy: 2 },
-      { dx: -3, dy: 3 },
-      { dx: 2, dy: -3 },
-      { dx: -4, dy: 4 },
-      { dx: 3, dy: 1 },
-    ],
-  },
-  {
-    name: 'Tight Stack',
-    heroArch: 0.18,
-    tilt: 0.9,
-    gap: 10,
-    offsets: [
-      { dx: 0, dy: 0 },
-      { dx: 1, dy: 1 },
-      { dx: -1, dy: -1 },
-      { dx: 1, dy: -1 },
-      { dx: -1, dy: 1 },
-      { dx: 0, dy: 0 },
-    ],
-  },
-];
+export function panelLayout(w, h) {
+  const width = Math.max(0, w);
+  const height = Math.max(0, h);
+  const margin = Math.min(width * 0.02, height * 0.5);
+  const gap = Math.min(width * 0.01, height * 0.02);
+  const innerWidth = Math.max(0, width - margin * 2);
+  const bottomEdge = Math.max(margin, height - margin);
+  const heroBottom = Math.min(bottomEdge, Math.max(margin, height * 0.55));
 
-export function layoutByIndex(i) {
-  const count = LAYOUTS.length;
-  let index = Number(i);
-  if (!Number.isFinite(index)) index = 0;
-  index = ((Math.trunc(index) % count) + count) % count;
-  return LAYOUTS[index];
+  const hero = {
+    x: margin,
+    y: margin,
+    w: innerWidth,
+    h: heroBottom - margin,
+  };
+
+  const panelsTop = Math.min(bottomEdge, heroBottom + gap);
+  const panelWidth = Math.max(0, (innerWidth - gap * 2) / 3);
+  const panelHeight = Math.max(0, (bottomEdge - panelsTop - gap) / 2);
+  const panels = [];
+
+  for (let row = 0; row < 2; row += 1) {
+    for (let col = 0; col < 3; col += 1) {
+      panels.push({
+        x: margin + col * (panelWidth + gap),
+        y: Math.min(
+          bottomEdge - panelHeight,
+          panelsTop + row * (panelHeight + gap),
+        ),
+        w: panelWidth,
+        h: panelHeight,
+      });
+    }
+  }
+
+  return { hero, panels };
 }
 
-export function shuffleLayout() {
-  return Math.floor(Math.random() * LAYOUTS.length);
+export function archPath(ctx, r) {
+  const archHeight = r.h * 0.35;
+  const centerX = r.x + r.w / 2;
+  const springY = r.y + archHeight;
+
+  ctx.beginPath();
+  ctx.moveTo(r.x, r.y + r.h);
+  ctx.lineTo(r.x, springY);
+  ctx.ellipse(centerX, springY, r.w / 2, archHeight, 0, Math.PI, Math.PI * 2);
+  ctx.lineTo(r.x + r.w, r.y + r.h);
+  ctx.closePath();
 }

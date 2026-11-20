@@ -1,219 +1,209 @@
-import { drawCover, drawCoverToSize } from './render.js';
-import { GRADES, DEFAULT_GRADE, gradeById } from './grades.js';
-import { layoutByIndex, shuffleLayout } from './layouts.js';
-import { applyShot } from './shots.js';
+import { drawPoster } from './render.js';
+import { GRADES, gradeById } from './grades.js';
+import { SHOTS, shotFromQuery } from './shots.js';
 
-const PREVIEW_WIDTH = 1080;
-const PREVIEW_HEIGHT = 1080;
-const DEFAULT_PHOTO_SRC = new URL('../samples/boulevard.jpg', import.meta.url).href;
+const PREVIEW_SIZE = { w: 1080, h: 1080 };
+const PREVIEW_DISPLAY_WIDTH = '540px';
+const DEFAULT_PHOTO = 'samples/pier.jpg';
+const EXPORT_NAME = 'vice-pop-cover.png';
 
 const state = {
   photo: null,
-  photoSrc: DEFAULT_PHOTO_SRC,
-  caption: 'Boulevard Queen',
+  focus: { x: 0.5, y: 0.35 },
+  caption: 'Sunset Heist',
   subtitle: 'A story in seven frames',
-  grade: DEFAULT_GRADE,
-  layoutIndex: 0,
-  size: { w: 1080, h: 1080 }
+  grade: 'vice-sunset',
+  size: '1080x1080',
+  seed: 1,
 };
 
-const defaultPhoto = new Image();
-defaultPhoto.decoding = 'async';
-state.photo = defaultPhoto;
-
-const defaultPhotoReady = new Promise((resolve, reject) => {
-  defaultPhoto.onload = () => {
-    defaultPhoto.onload = null;
-    defaultPhoto.onerror = null;
-    resolve(defaultPhoto);
-  };
-  defaultPhoto.onerror = () => {
-    defaultPhoto.onload = null;
-    defaultPhoto.onerror = null;
-    reject(new Error(`Could not load default photo: ${DEFAULT_PHOTO_SRC}`));
-  };
-  defaultPhoto.src = DEFAULT_PHOTO_SRC;
-});
-
-let canvas = null;
-let captionInput = null;
-let subtitleInput = null;
-let photoInput = null;
-let shuffleButton = null;
-let exportButton = null;
-let gradeButtons = [];
-let sizeButtons = [];
-let photoLoadToken = 0;
-let initialized = false;
-
-function loadImage(src) {
-  return new Promise((resolve, reject) => {
-    const image = new Image();
-    image.decoding = 'async';
-    image.onload = () => {
-      image.onload = null;
-      image.onerror = null;
-      resolve(image);
-    };
-    image.onerror = () => {
-      image.onload = null;
-      image.onerror = null;
-      reject(new Error(`Could not load photo: ${src}`));
-    };
-    image.src = src;
-  });
-}
-
-function waitForFonts() {
-  if (!document.fonts) return Promise.resolve();
-
-  const loads = [];
-  if (typeof document.fonts.load === 'function') {
-    loads.push(document.fonts.load('700 100px "Liberation Sans"'));
-    loads.push(document.fonts.load('400 40px "Liberation Sans"'));
-  }
-
-  return Promise.allSettled(loads)
-    .then(() => document.fonts.ready)
-    .catch(() => undefined);
-}
+const clamp = (value, lo, hi) => Math.min(hi, Math.max(lo, value));
 
 function render() {
-  if (!canvas || !state.photo) return;
+  const canvas = document.querySelector('#poster');
+  if (!canvas) return;
 
-  canvas.width = PREVIEW_WIDTH;
-  canvas.height = PREVIEW_HEIGHT;
-  drawCover(canvas, {
+  if (canvas.width !== PREVIEW_SIZE.w || canvas.height !== PREVIEW_SIZE.h) {
+    canvas.width = PREVIEW_SIZE.w;
+    canvas.height = PREVIEW_SIZE.h;
+  }
+  canvas.style.width = '100%';
+  canvas.style.maxWidth = PREVIEW_DISPLAY_WIDTH;
+  canvas.style.height = 'auto';
+
+  drawPoster(canvas, {
     photo: state.photo,
+    focus: state.focus,
     caption: state.caption,
     subtitle: state.subtitle,
     grade: state.grade,
-    layoutIndex: state.layoutIndex,
-    width: PREVIEW_WIDTH,
-    height: PREVIEW_HEIGHT
+    seed: state.seed,
+    size: PREVIEW_SIZE,
   });
 }
 
-function normalizeGrade(value) {
-  if (Object.prototype.hasOwnProperty.call(GRADES, value)) return value;
+function loadPhoto(src) {
+  if (typeof Image !== 'function') {
+    render();
+    return;
+  }
 
-  const fallback = gradeById(value);
-  return Object.keys(GRADES).find((id) => GRADES[id] === fallback) || DEFAULT_GRADE;
+  const image = new Image();
+  image.onload = () => {
+    state.photo = image;
+    render();
+  };
+  image.onerror = () => {
+    render();
+  };
+  image.src = src;
 }
 
-function parseSize(value) {
-  const match = /^(\d+)x(\d+)$/i.exec(value || '');
-  if (!match) return null;
+function readPhotoFile(file) {
+  if (!file || typeof FileReader !== 'function') return;
 
-  const width = Number(match[1]);
-  const height = Number(match[2]);
-  if (!width || !height) return null;
-  return { w: width, h: height };
+  const reader = new FileReader();
+  reader.onload = () => {
+    if (typeof reader.result === 'string' && reader.result) {
+      loadPhoto(reader.result);
+    }
+  };
+  reader.onerror = () => {
+    render();
+  };
+  reader.readAsDataURL(file);
 }
 
-function setActive(buttons, isActive) {
-  buttons.forEach((button, index) => {
-    const active = isActive(button, index);
-    button.classList.toggle('active', active);
+function applyShot(shot) {
+  if (!shot || !Object.values(SHOTS).includes(shot)) return;
+
+  if (typeof shot.caption === 'string') state.caption = shot.caption;
+
+  if (shot.grade && GRADES.some((grade) => grade.id === shot.grade)) {
+    state.grade = gradeById(shot.grade).id;
+  }
+
+  if (Array.isArray(shot.size) && shot.size.length >= 2) {
+    const w = Number(shot.size[0]);
+    const h = Number(shot.size[1]);
+    if (Number.isFinite(w) && Number.isFinite(h) && w > 0 && h > 0) {
+      state.size = `${Math.round(w)}x${Math.round(h)}`;
+    }
+  }
+}
+
+function photoPath(shot) {
+  return shot && shot.photo ? `samples/${shot.photo}.jpg` : DEFAULT_PHOTO;
+}
+
+function syncGradeButtons() {
+  const current = gradeById(state.grade).id;
+  document.querySelectorAll('[data-grade]').forEach((button) => {
+    const active = button.dataset.grade === current;
+    button.classList.toggle('is-active', active);
     button.setAttribute('aria-pressed', String(active));
   });
 }
 
-function syncControls() {
+function syncSizeButtons() {
+  document.querySelectorAll('[data-size]').forEach((button) => {
+    const active = button.dataset.size === state.size;
+    button.classList.toggle('is-active', active);
+    button.setAttribute('aria-pressed', String(active));
+  });
+}
+
+function syncTextInputs() {
+  const captionInput =
+    document.querySelector('input#caption') || document.querySelector('#caption-input');
   if (captionInput) captionInput.value = state.caption;
+
+  const subtitleInput =
+    document.querySelector('input#subtitle') || document.querySelector('#subtitle-input');
   if (subtitleInput) subtitleInput.value = state.subtitle;
-
-  const activeGrade = normalizeGrade(state.grade);
-  setActive(gradeButtons, (button) => button.dataset.grade === activeGrade);
-  setActive(sizeButtons, (button) => {
-    const size = parseSize(button.dataset.size);
-    return Boolean(size && size.w === state.size.w && size.h === state.size.h);
-  });
 }
 
-function applyGrade(button) {
-  state.grade = normalizeGrade(button.dataset.grade);
-  setActive(gradeButtons, (candidate) => candidate.dataset.grade === state.grade);
-  render();
+function parseSize(value) {
+  const match = /^(\d+)\s*[x×]\s*(\d+)$/i.exec(String(value || ''));
+  if (!match) return { w: 1080, h: 1080 };
+  return {
+    w: Math.max(1, Number(match[1])),
+    h: Math.max(1, Number(match[2])),
+  };
 }
 
-function applySize(button) {
-  const size = parseSize(button.dataset.size);
-  if (!size) return;
-
-  state.size = size;
-  setActive(sizeButtons, (candidate) => candidate === button);
+function nudgeFocus() {
+  const angle = (state.seed * 2.399963229728653) % (Math.PI * 2);
+  const radius = 0.025 + ((state.seed * 37) % 53) / 1400;
+  state.focus = {
+    x: clamp(state.focus.x + Math.cos(angle) * radius, 0.08, 0.92),
+    y: clamp(state.focus.y + Math.sin(angle) * radius, 0.08, 0.92),
+  };
 }
 
-function loadPhotoFile(file) {
-  if (!file) return;
-
-  const request = ++photoLoadToken;
-  const objectUrl = URL.createObjectURL(file);
-
-  loadImage(objectUrl)
-    .then((image) => {
-      if (request !== photoLoadToken) return;
-      state.photo = image;
-      state.photoSrc = null;
-      render();
-    })
-    .catch((error) => {
-      console.error(error);
-    })
-    .finally(() => {
-      URL.revokeObjectURL(objectUrl);
-    });
-}
-
-async function exportPng() {
-  if (!state.photo) return;
-
-  const exportCanvas = drawCoverToSize({
-    photo: state.photo,
-    caption: state.caption,
-    subtitle: state.subtitle,
-    grade: state.grade,
-    layoutIndex: state.layoutIndex,
-    width: state.size.w,
-    height: state.size.h
-  });
-
-  const blob = await new Promise((resolve) => {
-    exportCanvas.toBlob(resolve, 'image/png');
-  });
-
-  if (!blob) throw new Error('Could not encode the poster as PNG.');
-
+function downloadBlob(blob) {
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
   link.href = url;
-  link.download = `vice-pop-${state.size.w}x${state.size.h}.png`;
+  link.download = EXPORT_NAME;
+  link.rel = 'noopener';
   document.body.appendChild(link);
   link.click();
   link.remove();
-
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
-function bindControls() {
-  canvas = document.getElementById('poster');
-  captionInput = document.getElementById('captionInput');
-  subtitleInput = document.getElementById('subtitleInput');
-  photoInput = document.getElementById('photoInput');
-  shuffleButton = document.getElementById('shuffleBtn');
-  exportButton = document.getElementById('exportBtn');
-  gradeButtons = Array.from(document.querySelectorAll('[data-grade]'));
-  sizeButtons = Array.from(document.querySelectorAll('[data-size]'));
+function exportPng() {
+  const { w, h } = parseSize(state.size);
+  const offscreen = document.createElement('canvas');
+  offscreen.width = w;
+  offscreen.height = h;
 
+  drawPoster(offscreen, {
+    photo: state.photo,
+    focus: state.focus,
+    caption: state.caption,
+    subtitle: state.subtitle,
+    grade: state.grade,
+    seed: state.seed,
+    size: { w, h },
+  });
+
+  if (typeof offscreen.toBlob !== 'function') return;
+  offscreen.toBlob((blob) => {
+    if (blob) downloadBlob(blob);
+  }, 'image/png');
+}
+
+function findButton(selectors, labels) {
+  for (const selector of selectors) {
+    const match = document.querySelector(selector);
+    if (match) return match;
+  }
+
+  const wanted = labels.map((label) => label.toUpperCase());
+  return (
+    Array.from(document.querySelectorAll('button')).find((button) => {
+      const text = (button.textContent || '').replace(/\s+/g, ' ').trim().toUpperCase();
+      return wanted.some((label) => text === label || text.includes(label));
+    }) || null
+  );
+}
+
+function wireControls() {
+  const photoInput =
+    document.querySelector('input[type="file"][accept*="image"]') ||
+    document.querySelector('#photo-input') ||
+    document.querySelector('input[type="file"]');
   if (photoInput) {
-    photoInput.accept = 'image/*';
     photoInput.addEventListener('change', () => {
       const file = photoInput.files && photoInput.files[0];
-      loadPhotoFile(file);
+      if (file) readPhotoFile(file);
     });
   }
 
+  const captionInput =
+    document.querySelector('input#caption') || document.querySelector('#caption-input');
   if (captionInput) {
     captionInput.addEventListener('input', () => {
       state.caption = captionInput.value;
@@ -221,6 +211,8 @@ function bindControls() {
     });
   }
 
+  const subtitleInput =
+    document.querySelector('input#subtitle') || document.querySelector('#subtitle-input');
   if (subtitleInput) {
     subtitleInput.addEventListener('input', () => {
       state.subtitle = subtitleInput.value;
@@ -228,58 +220,66 @@ function bindControls() {
     });
   }
 
-  gradeButtons.forEach((button) => {
-    button.addEventListener('click', () => applyGrade(button));
+  document.querySelectorAll('[data-grade]').forEach((button) => {
+    button.addEventListener('click', (event) => {
+      event.preventDefault();
+      const grade = button.dataset.grade;
+      if (!grade) return;
+      state.grade = grade;
+      syncGradeButtons();
+      render();
+    });
   });
 
-  sizeButtons.forEach((button) => {
-    button.addEventListener('click', () => applySize(button));
+  document.querySelectorAll('[data-size]').forEach((button) => {
+    button.addEventListener('click', (event) => {
+      event.preventDefault();
+      const size = button.dataset.size;
+      if (!size) return;
+      state.size = size;
+      syncSizeButtons();
+      render();
+    });
   });
 
+  const shuffleButton = findButton(
+    ['#shuffle-button', '#shuffle', '#shuffle-layout', '[data-action="shuffle"]', '[data-shuffle]'],
+    ['SHUFFLE LAYOUT', 'SHUFFLE'],
+  );
   if (shuffleButton) {
-    shuffleButton.addEventListener('click', () => {
-      state.layoutIndex = shuffleLayout();
+    shuffleButton.addEventListener('click', (event) => {
+      event.preventDefault();
+      state.seed += 1;
+      nudgeFocus();
       render();
     });
   }
 
+  const exportButton = findButton(
+    ['#export-button', '#export-png', '#export', '[data-action="export"]', '[data-export]'],
+    ['EXPORT PNG', 'DOWNLOAD PNG'],
+  );
   if (exportButton) {
-    exportButton.addEventListener('click', () => {
-      exportPng().catch((error) => {
-        console.error(error);
-      });
+    exportButton.addEventListener('click', (event) => {
+      event.preventDefault();
+      exportPng();
     });
   }
 }
 
-async function init() {
-  if (initialized) return;
-  initialized = true;
-
-  bindControls();
-  if (!canvas) throw new Error('Missing #poster canvas.');
-
-  await Promise.allSettled([waitForFonts(), defaultPhotoReady]);
-
-  try {
-    await applyShot(state);
-  } catch (error) {
-    console.error(error);
-  }
-
-  syncControls();
+function boot() {
+  const shot = shotFromQuery();
+  applyShot(shot);
+  syncTextInputs();
+  syncGradeButtons();
+  syncSizeButtons();
+  wireControls();
   render();
-  document.body.dataset.ready = 'true';
-}
-
-export function getState() {
-  return state;
+  loadPhoto(photoPath(shot));
 }
 
 if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', () => {
-    init().catch((error) => console.error(error));
-  }, { once: true });
+  document.addEventListener('DOMContentLoaded', boot, { once: true });
 } else {
-  init().catch((error) => console.error(error));
+  boot();
 }
