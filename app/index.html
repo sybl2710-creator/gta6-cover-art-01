@@ -1,103 +1,167 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Vice Pop Studio — photo to poster cover art</title>
-<link rel="stylesheet" href="./style.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Vice Pop Studio — GTA 6 Style Cover Maker</title>
+  <meta name="description" content="Turn your photo into a neon-soaked, seven-panel Vice City cover poster. Runs fully offline." />
+  <link rel="stylesheet" href="./style.css" />
 </head>
 <body>
-<header class="bar">
-  <div class="brand">
-    <span class="brand-mark" aria-hidden="true">VP</span>
-    <span class="brand-text">Vice Pop Studio<small>photo → poster cover art</small></span>
-  </div>
-  <div class="sizes">
-    <button type="button" class="size is-on" data-format="square">1080 × 1080</button>
-    <button type="button" class="size" data-format="portrait">1080 × 1350</button>
-    <button type="button" class="size" data-format="wide">1920 × 1080</button>
-  </div>
-  <div class="exports">
-    <button type="button" class="ghost" id="export-all">Export all three</button>
-    <button type="button" class="solid" id="export">Download PNG</button>
-  </div>
-</header>
+  <div class="app-shell">
 
-<main class="studio">
-  <aside class="rail">
-    <section class="card">
-      <h2>1 · Photos</h2>
-      <label class="drop" for="photos">
-        <strong>Add your photos</strong>
-        <span>Drop files or click to browse. They stay on this machine.</span>
-        <input id="photos" type="file" accept="image/*" multiple>
-      </label>
-      <div class="thumbs" id="thumbs" aria-label="Your photos"></div>
-      <p class="hint" id="photo-hint">No photos yet — the poster shows placeholder art.</p>
-    </section>
-
-    <section class="card">
-      <h2>2 · Panel</h2>
-      <label class="field">Filling panel
-        <select id="panel-pick"></select>
-      </label>
-      <label class="field">Photo in this panel
-        <select id="panel-photo"></select>
-      </label>
-      <div class="row">
-        <button type="button" class="ghost" id="fill-all">Fill all panels</button>
-        <button type="button" class="ghost" id="spread-all">Spread photos</button>
+    <header class="app-header">
+      <div class="brand">
+        <p class="brand-kicker">Cover Art Workshop</p>
+        <h1 class="brand-title">Vice Pop Studio</h1>
+        <p class="brand-tagline">Seven panels. One photo. A whole sunset worth of attitude.</p>
       </div>
-      <div class="seg" role="group" aria-label="Fit mode">
-        <button type="button" data-mode="fill" class="is-on">Fill frame</button>
-        <button type="button" data-mode="fit">Fit whole</button>
+      <div class="header-badge" aria-hidden="true">
+        <span class="badge-line">VICE POP</span>
+        <span class="badge-line">EST. 2026</span>
       </div>
-      <label class="field">Zoom <output id="zoom-out">1.00×</output>
-        <input id="zoom" type="range" min="1" max="3" step="0.02" value="1">
-      </label>
-      <label class="field">Hero panel
-        <select id="hero-pick"></select>
-      </label>
-      <p class="hint">Click or drag on the poster to set the focus point — aim it at a face. Default sits on the upper third.</p>
-      <div class="row">
-        <button type="button" class="ghost" id="reset-crop">Reset crop</button>
-      </div>
-    </section>
+    </header>
 
-    <section class="card">
-      <h2>3 · Caption</h2>
-      <label class="field">Title
-        <input id="caption" type="text" maxlength="48" value="SUNSET LEDGER" autocomplete="off">
-      </label>
-      <label class="field">Title size <output id="title-out">100%</output>
-        <input id="title-size" type="range" min="0.6" max="1.35" step="0.01" value="1">
-      </label>
-      <label class="field">Title height <output id="title-y-out">0</output>
-        <input id="title-y" type="range" min="-0.06" max="0.05" step="0.002" value="0">
-      </label>
-      <label class="field">Cast tags <span class="hint-inline">one per panel</span>
-        <span id="roles"></span>
-      </label>
-    </section>
+    <main class="studio-layout">
 
-    <section class="card">
-      <h2>4 · Grade</h2>
-      <div class="grades" id="grades" role="group" aria-label="Colour grade"></div>
-      <label class="check"><input id="seal-toggle" type="checkbox" checked> Show the seal</label>
-    </section>
-  </aside>
+      <!-- Preview column: the live canvas plus a few helper hints -->
+      <section class="preview-column" aria-labelledby="preview-heading">
+        <div class="panel preview-panel">
+          <div class="panel-heading">
+            <h2 id="preview-heading">Poster Preview</h2>
+            <span class="panel-hint">540 × 540 · half scale</span>
+          </div>
 
-  <section class="stage">
-    <div class="stage-head">
-      <span id="format-label">1080 × 1080 · 7 panels</span>
-      <span id="status" role="status">Ready</span>
-    </div>
-    <div class="frame">
-      <canvas id="poster" aria-label="Live poster preview"></canvas>
-    </div>
-    <p class="hint center">Drag a panel to pan it, click to drop the focus point. Everything redraws as you type.</p>
-  </section>
-</main>
-<script type="module" src="./src/main.js"></script>
+          <div class="canvas-frame">
+            <canvas id="poster" width="540" height="540" aria-label="Live preview of the generated cover art"></canvas>
+          </div>
+
+          <p class="preview-caption">
+            Your photo appears in the arched hero panel and in the six panels below.
+            Captions and tags are drawn directly onto the poster.
+          </p>
+        </div>
+
+        <div class="panel tips-panel">
+          <h2 class="tips-title">Quick tips</h2>
+          <ul class="tips-list">
+            <li>Upload two or three photos to spread them across the grid.</li>
+            <li>Short captions in all caps land hardest in chrome lettering.</li>
+            <li>Pick a grade, then export the size you need for your feed.</li>
+          </ul>
+        </div>
+      </section>
+
+      <!-- Controls column: upload, text, grades, size, tags, billing -->
+      <section class="controls-column" aria-labelledby="controls-heading">
+        <div class="panel controls-panel">
+          <div class="panel-heading">
+            <h2 id="controls-heading">Studio Controls</h2>
+          </div>
+
+          <form class="controls-form" autocomplete="off" onsubmit="return false;">
+
+            <!-- Photo upload -->
+            <div class="control-group">
+              <label class="control-label" for="photo-input">Photos</label>
+              <input
+                class="file-input"
+                id="photo-input"
+                name="photos"
+                type="file"
+                accept="image/*"
+                multiple
+              />
+              <p class="control-note">Images never leave this machine.</p>
+            </div>
+
+            <!-- Caption and subtitle -->
+            <div class="control-group">
+              <label class="control-label" for="caption-input">Caption</label>
+              <input
+                class="text-input text-input-hero"
+                id="caption-input"
+                name="caption"
+                type="text"
+                maxlength="48"
+                placeholder="LATE NIGHT VICE"
+              />
+            </div>
+
+            <div class="control-group">
+              <label class="control-label" for="subtitle-input">Subtitle</label>
+              <input
+                class="text-input"
+                id="subtitle-input"
+                name="subtitle"
+                type="text"
+                maxlength="64"
+                placeholder="A story in seven frames"
+              />
+            </div>
+
+            <!-- Colour grades -->
+            <fieldset class="control-group control-group-fieldset">
+              <legend class="control-label">Colour Grade</legend>
+              <div class="grade-row" role="group" aria-label="Colour grade">
+                <button type="button" class="grade-button is-active" data-grade="vice-sunset">Vice Sunset</button>
+                <button type="button" class="grade-button" data-grade="neon-night">Neon Night</button>
+                <button type="button" class="grade-button" data-grade="palm-dusk">Palm Dusk</button>
+                <button type="button" class="grade-button" data-grade="chrome-heat">Chrome Heat</button>
+                <button type="button" class="grade-button" data-grade="mono-noir">Mono Noir</button>
+              </div>
+            </fieldset>
+
+            <!-- Export sizes -->
+            <fieldset class="control-group control-group-fieldset">
+              <legend class="control-label">Export Size</legend>
+              <div class="export-row" role="group" aria-label="Export size">
+                <button type="button" class="export-button is-active" data-size="1080x1080">1080 × 1080</button>
+                <button type="button" class="export-button" data-size="1080x1350">1080 × 1350</button>
+                <button type="button" class="export-button" data-size="1920x1080">1920 × 1080</button>
+              </div>
+              <button type="button" class="export-action" id="export-button">Download PNG</button>
+            </fieldset>
+
+            <!-- Role tags -->
+            <fieldset class="control-group control-group-fieldset">
+              <legend class="control-label">Role Tags</legend>
+              <div class="tag-row" role="group" aria-label="Role tags">
+                <input class="text-input tag-input" id="tag-input-1" name="tag1" type="text" maxlength="14" placeholder="HERO" />
+                <input class="text-input tag-input" id="tag-input-2" name="tag2" type="text" maxlength="14" placeholder="ICON" />
+                <input class="text-input tag-input" id="tag-input-3" name="tag3" type="text" maxlength="14" placeholder="2026" />
+              </div>
+            </fieldset>
+
+            <!-- Billing line -->
+            <div class="control-group">
+              <label class="control-label" for="billing-input">Billing</label>
+              <input
+                class="text-input"
+                id="billing-input"
+                name="billing"
+                type="text"
+                maxlength="60"
+                placeholder="Starring you, obviously"
+              />
+            </div>
+
+          </form>
+        </div>
+
+        <p class="offline-note">
+          Everything runs offline in this browser tab — no uploads, no accounts, no network requests.
+          Your photos stay on your machine.
+        </p>
+      </section>
+
+    </main>
+
+    <footer class="app-footer">
+      <p>Vice Pop Studio · a local cover-art toy for the make.fun bounty</p>
+    </footer>
+  </div>
+
+  <script type="module" src="./src/main.js"></script>
 </body>
 </html>

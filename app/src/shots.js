@@ -1,61 +1,130 @@
-// Screenshot scenes driven by the query string.
+// Deep-link / screenshot support. A shot URL can preload a caption and a sample
+// photo, and can collapse the editor down to just the poster canvas:
 //
-// ?shot=cover  — the poster alone, filled with sample photos, for the feed shot
-// ?shot=editor — the full editor with photos loaded and a caption filled in
-// Both accept `caption`, `grade`, `format` and an optional comma-separated
-// `photos` list of sample names. window.__shotReady flips once the paint is done.
+//   index.html?shot=cover&photo=boulevard&caption=WELCOME%20TO%20VICE%20CITY
 
-const SAMPLE_NAMES = ['boulevard', 'pier'];
+import { defaultFocus } from './crop.js';
 
-function loadSample(name) {
-  return new Promise((resolve, reject) => {
-    const img = new Image();
-    img.onload = () => resolve(img);
-    img.onerror = () => reject(new Error(`sample ${name} missing`));
-    img.src = `samples/${name}.jpg`;
-  });
+const SAMPLE_NAMES = new Set(['boulevard', 'pier']);
+const PANEL_IDS = ['hero', 'a', 'b', 'c', 'd', 'e', 'f'];
+
+export function applyShot(state, redraw) {
+  if (!state || typeof window === 'undefined') return;
+
+  let params;
+  try {
+    params = new URLSearchParams(window.location.search || '');
+  } catch (err) {
+    return;
+  }
+
+  // Batch every change into one repaint so the canvas never draws twice.
+  const paint = oncePerFrame(redraw);
+
+  const caption = params.get('caption');
+  if (caption !== null) applyCaption(state, caption);
+
+  const photo = normalizePhoto(params.get('photo'));
+  if (photo) applyPhoto(state, photo, paint);
+
+  const shot = params.get('shot');
+  if (shot !== null) applyShotClass(shot);
+
+  paint();
 }
 
-/** Prepares a scene and paints it, returning a promise that settles after paint. */
-export async function runShot(shot, query, ui) {
-  document.body.classList.add(`shot-${shot}`);
-  const names = (query.get('photos') || 'boulevard,pier').split(',');
-  const samples = [];
-  for (const name of names) {
-    try {
-      samples.push(await loadSample(name.trim()));
-    } catch (err) {
-      console.warn(err.message);
+function normalizePhoto(raw) {
+  if (raw === null) return null;
+  const name = raw.trim().toLowerCase().replace(/\.jpe?g$/, '');
+  return SAMPLE_NAMES.has(name) ? name : null;
+}
+
+function applyShotClass(shot) {
+  const body = document.body;
+  if (!body || !body.classList) return;
+  if (shot === 'cover') body.classList.add('shot-cover');
+  else body.classList.remove('shot-cover');
+}
+
+function applyCaption(state, caption) {
+  state.caption = caption;
+
+  const input = document.getElementById('caption-input');
+  if (!input) return;
+
+  input.value = caption;
+  try {
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+  } catch (err) {
+    // Engines without constructable Events still get the updated value.
+  }
+}
+
+function applyPhoto(state, name, paint) {
+  if (typeof Image === 'undefined') return;
+
+  const img = new Image();
+  img.decoding = 'async';
+
+  img.onload = () => {
+    state.photos = state.photos || {};
+    putPhoto(state.photos, 'hero', img);
+
+    // Fill only the slots that are still blank, leaving the user's own
+    // photos alone when a shot URL is opened on top of an existing edit.
+    for (const id of PANEL_IDS) {
+      if (id === 'hero') continue;
+      if (isEmptySlot(state.photos, id)) putPhoto(state.photos, id, img);
     }
-  }
 
-  ui.applyFormat(query.get('format') || (shot === 'wide' ? 'wide' : 'square'));
-  ui.state.caption = query.get('caption') || 'SUNSET LEDGER';
-  ui.state.gradeId = query.get('grade') || 'vice-sunset';
+    // A shot always starts from the standard framing so captures repeat.
+    if (typeof defaultFocus === 'function') state.focus = defaultFocus();
 
-  if (samples.length) {
-    ui.photos.length = 0;
-    samples.forEach((img) => ui.photos.push(img));
-    const grid = ui.state.panels;
-    const ids = Object.keys(grid);
-    ids.forEach((id, i) => {
-      const photoIndex = i % samples.length;
-      grid[id] = { crop: { ...grid[id].crop, photoIndex } };
+    paint();
+  };
+
+  img.onerror = () => {
+    // A missing sample must never break the editor.
+  };
+
+  img.src = `samples/${name}.jpg`;
+}
+
+function putPhoto(photos, id, img) {
+  if (Array.isArray(photos)) photos[indexOf(id)] = img;
+  else photos[id] = img;
+}
+
+function isEmptySlot(photos, id) {
+  if (Array.isArray(photos)) return !photos[indexOf(id)];
+  return !photos[id];
+}
+
+function indexOf(id) {
+  const i = PANEL_IDS.indexOf(id);
+  return i < 0 ? 0 : i;
+}
+
+// Collapse back-to-back redraw requests into a single call per animation frame.
+function oncePerFrame(redraw) {
+  if (typeof redraw !== 'function') return () => {};
+
+  let queued = false;
+  const schedule =
+    typeof window !== 'undefined' && typeof window.requestAnimationFrame === 'function'
+      ? window.requestAnimationFrame.bind(window)
+      : (fn) => setTimeout(fn, 16);
+
+  return () => {
+    if (queued) return;
+    queued = true;
+    schedule(() => {
+      queued = false;
+      try {
+        redraw();
+      } catch (err) {
+        // Keep a bad frame from wedging the queue.
+      }
     });
-    ui.state.activePhoto = 0;
-  }
-  if (query.get('hero')) ui.state.heroId = query.get('hero');
-  if (query.get('captionY')) ui.state.titleOffsetY = Number(query.get('captionY'));
-  if (query.get('captionSize')) ui.state.titleScale = Number(query.get('captionSize'));
-
-  ui.buildPanelPicker();
-  ui.buildRoleInputs();
-  ui.refreshPanelControls();
-  ui.drawThumbs();
-
-  // Two frames after the font promise resolves: a reliable "painted" point.
-  await (document.fonts?.ready ?? Promise.resolve());
-  ui.render();
-  await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
-  window.__shotReady = true;
+  };
 }

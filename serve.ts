@@ -1,19 +1,15 @@
-// A tiny static server for app/ (Node 22, standard library only), so an entry can be tried
-// locally without a build step: `node serve.ts` serves app/ on http://localhost:8080.
-// It sends the MIME types an offline web app needs, refuses any path outside app/, and otherwise
-// does nothing clever: this is a development convenience, not a web server for the internet.
-import { createReadStream, statSync } from 'node:fs';
+// A small, dependency-free static server for previewing app/ locally.
+// It only serves files that physically live inside app/, answers HEAD without
+// a body, and rejects anything other than GET/HEAD. Directory requests fall
+// through to index.html so the offline studio behaves like a normal site.
 import { createServer } from 'node:http';
+import { createReadStream, realpathSync, statSync } from 'node:fs';
 import { extname, join, normalize, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const root = resolve(fileURLToPath(new URL('./app', import.meta.url)));
-const args = process.argv.slice(2);
-const portIndex = args.indexOf('--port');
-const requested = portIndex === -1 ? 8080 : Number(args[portIndex + 1]);
-const port = Number.isInteger(requested) && requested > 0 && requested < 65536 ? requested : 8080;
+const root = realpathSync(resolve(fileURLToPath(new URL('.', import.meta.url)), 'app'));
 
-const MIME: Record<string, string> = {
+const types = {
   '.html': 'text/html; charset=utf-8',
   '.js': 'text/javascript; charset=utf-8',
   '.mjs': 'text/javascript; charset=utf-8',
@@ -25,49 +21,72 @@ const MIME: Record<string, string> = {
   '.gif': 'image/gif',
   '.webp': 'image/webp',
   '.svg': 'image/svg+xml',
-  '.ico': 'image/x-icon',
-  '.woff2': 'font/woff2',
-  '.woff': 'font/woff',
   '.ttf': 'font/ttf',
   '.otf': 'font/otf',
-  '.bin': 'application/octet-stream',
-  '.wasm': 'application/wasm',
-  '.wav': 'audio/wav',
-  '.mp3': 'audio/mpeg',
-  '.ogg': 'audio/ogg',
+  '.woff': 'font/woff',
+  '.woff2': 'font/woff2',
   '.txt': 'text/plain; charset=utf-8',
 };
 
-createServer((request, response) => {
-  const url = new URL(request.url ?? '/', 'http://localhost');
-  let pathname: string;
+const portArg = process.argv.indexOf('--port');
+const requested = portArg >= 0 ? Number(process.argv[portArg + 1]) : 8080;
+const port = Number.isInteger(requested) && requested > 0 && requested < 65536 ? requested : 8080;
+
+const send = (res, status, body, extra = {}) => {
+  res.writeHead(status, { 'content-type': 'text/plain; charset=utf-8', ...extra });
+  res.end(body);
+};
+
+const inside = (file) => file === root || file.startsWith(root + sep);
+
+createServer((req, res) => {
+  const method = req.method || 'GET';
+  if (method !== 'GET' && method !== 'HEAD') {
+    send(res, 405, 'Method not allowed', { allow: 'GET, HEAD' });
+    return;
+  }
+
+  let pathname = '/';
   try {
-    pathname = decodeURIComponent(url.pathname);
+    pathname = decodeURIComponent(new URL(req.url || '/', 'http://localhost').pathname);
   } catch {
-    response.writeHead(400).end('bad request');
+    send(res, 400, 'Bad request');
     return;
   }
-  if (pathname.endsWith('/')) pathname += 'index.html';
-  const file = resolve(join(root, normalize(pathname)));
-  if (file !== root && !file.startsWith(root + sep)) {
-    response.writeHead(403).end('forbidden');
+
+  const target = resolve(join(root, normalize(pathname)));
+  if (!inside(target)) {
+    send(res, 403, 'Forbidden');
     return;
   }
-  let size: number;
+
+  let file = target;
+  let info;
   try {
-    const stats = statSync(file);
-    if (!stats.isFile()) throw new Error('not a file');
-    size = stats.size;
+    info = statSync(file);
+    if (info.isDirectory()) {
+      file = join(file, 'index.html');
+      info = statSync(file);
+    }
+    file = realpathSync(file);
+    if (!inside(file) || !info.isFile()) throw new Error('not a file');
   } catch {
-    response.writeHead(404).end('not found');
+    send(res, 404, 'Not found');
     return;
   }
-  response.writeHead(200, {
-    'content-type': MIME[extname(file).toLowerCase()] ?? 'application/octet-stream',
-    'content-length': size,
+
+  const headers = {
+    'content-type': types[extname(file).toLowerCase()] || 'application/octet-stream',
+    'content-length': String(info.size),
     'cache-control': 'no-store',
-  });
-  createReadStream(file).pipe(response);
-}).listen(port, '127.0.0.1', () => {
-  console.log(`app/ is on http://localhost:${port}`);
+  };
+
+  res.writeHead(200, headers);
+  if (method === 'HEAD') {
+    res.end();
+    return;
+  }
+  createReadStream(file).on('error', () => res.destroy()).pipe(res);
+}).listen(port, () => {
+  console.log(`Vice Pop Studio is served from ${root} at http://localhost:${port}`);
 });
