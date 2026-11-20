@@ -430,6 +430,11 @@ canvas.addEventListener('pointercancel', endPointer);
 applyFormat('square');
 drawThumbs();
 
+window.__verifyExport = () => FORMATS.map(f => {
+  const c = makePosterCanvas(f);
+  return { id: f.id, width: c.width, height: c.height };
+});
+
 const shot = new URLSearchParams(location.search).get('shot');
 if (shot) {
   runShot(shot, new URLSearchParams(location.search), { state, photos, render, applyFormat, assignPhoto, syncPanelDefaults, buildPanelPicker, buildRoleInputs, refreshPanelControls, drawThumbs }).catch((err) => {

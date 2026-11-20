@@ -5,7 +5,7 @@
 // Both accept `caption`, `grade`, `format` and an optional comma-separated
 // `photos` list of sample names. window.__shotReady flips once the paint is done.
 
-const SAMPLE_NAMES = ['boulevard', 'pier', 'marina', 'skyline', 'nightclub'];
+const SAMPLE_NAMES = ['boulevard', 'pier'];
 
 function loadSample(name) {
   return new Promise((resolve, reject) => {
@@ -18,7 +18,8 @@ function loadSample(name) {
 
 /** Prepares a scene and paints it, returning a promise that settles after paint. */
 export async function runShot(shot, query, ui) {
-  const names = (query.get('photos') || 'boulevard,pier,marina,skyline,nightclub').split(',');
+  document.body.classList.add(`shot-${shot}`);
+  const names = (query.get('photos') || 'boulevard,pier').split(',');
   const samples = [];
   for (const name of names) {
     try {
