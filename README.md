@@ -1,6 +1,6 @@
 # Vice Pop Studio
 
-An offline, GTA 6-style cover art maker that runs entirely in your browser.
+Vice Pop Studio is an offline, GTA 6-style cover art maker that runs entirely in the browser: pick a photo, let it crop to the faces, tune the grade and the chrome caption, and export a finished poster without a single network request.
 
 [![Build the best GTA 6 cover art](https://make.fun/badge/gta6-cover-art-01.svg)](https://make.fun/bounty/gta6-cover-art-01)
 [![Rank](https://make.fun/badge/gta6-cover-art-01/sybl2710-creator/gta6-cover-art-01/rank.svg)](https://make.fun/bounty/gta6-cover-art-01)
@@ -8,40 +8,35 @@ An offline, GTA 6-style cover art maker that runs entirely in your browser.
 
 ## What it does
 
-Vice Pop Studio turns a photo and a caption into a loud, sun-bleached cover. Every piece is drawn live in the page, so nothing is uploaded or fetched.
-
-- Seven-panel comic grid: a custom collage of tilted frames that you can shuffle until the rhythm feels right.
-- Hero pop-out arch: the subject steps out of a pastel arch and breaks the frame line.
-- Face-aware crop: the photo is centered on the most interesting region instead of always cropping from the middle.
-- Editable chrome caption: a glossy, outlined title you can retype, restyle, and reposition.
-- Role tags and billing block: small-caps credits and a studio block pin the poster together.
-- Seal and five grades: a round authenticity stamp plus five colour treatments, from raw to full neon.
-- Three PNG export sizes: square, widescreen, and portrait, all rendered locally and saved as downloads.
+- Seven-panel comic grid: a hero arch over six panels in two rows of three.
+- Hero pop-out arch, where the subject breaks the frame.
+- Face-aware crop that keeps the subject centred in every panel.
+- Editable chrome caption, plus a subtitle line.
+- Role tags (HERO, ICON, 2026) and a footer billing block.
+- Round "VICE POP - EST. 2026" seal and five grades: Vice Sunset, Neon Night, Palm Dusk, Chrome Heat, Mono Noir.
+- PNG export at 1080x1080, 1080x1350 and 1920x1080.
 
 ## Running it
 
-Open `app/index.html` directly in a browser, or serve it locally:
-
-```sh
-node serve.ts
-```
-
-Then visit `http://localhost:8080`. To build the hand-in bundle:
-
-```sh
-mkdir -p out && MAKEFUN_OUTPUT_DIR=out node main.ts
-```
+Open `app/index.html` directly, or run `node serve.ts` and visit http://localhost:8080. To build the hand-in bundle, run `mkdir -p out && MAKEFUN_OUTPUT_DIR=out node main.ts`.
 
 ## Files
 
-- `main.ts` — copies the app and screenshots into the output folder and writes `dossier.json`.
-- `shots.json` — the four screenshot targets used for the listing.
-- `serve.ts` — a tiny static server for local previews.
-- `app/index.html` — the whole studio: markup, styles, and rendering logic.
-- `app/style.css` — the layout and chrome around the artwork.
-- `app/src/` — the cover renderer, fonts, and sample photos.
-- `app/fonts/OFL.txt` — the licence covering the bundled Liberation Sans fonts.
+- `app/index.html` — the page shell and poster markup.
+- `app/style.css` — the poster, panel and chrome styling.
+- `app/src/main.js` — app state, controls and export wiring.
+- `app/src/render.js` — draws the poster and its panels.
+- `app/src/layouts.js` — the seven-panel grid and hero arch geometry.
+- `app/src/crop.js` — face-aware cropping for the photos.
+- `app/src/grades.js` — the five colour grades.
+- `app/src/shots.js` — reads the `?shot=` query for the screenshot renders.
+- `app/samples/` — the bundled pier and boulevard photos.
+- `app/fonts/` — bundled Liberation Sans fonts.
+- `main.ts` — copies `app/` and `screenshots/` to the output dir and writes `dossier.json`.
+- `serve.ts` — a tiny static server for local previews on port 8080.
+- `shots.json` — the four screenshot targets.
+- `vendor/makefun-app.ts` — the kit's unchanged dossier builder.
 
 ## Licence
 
-MIT.
+MIT. See [LICENSE](LICENSE).

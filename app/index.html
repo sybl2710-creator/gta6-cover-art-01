@@ -1,167 +1,91 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Vice Pop Studio — GTA 6 Style Cover Maker</title>
-  <meta name="description" content="Turn your photo into a neon-soaked, seven-panel Vice City cover poster. Runs fully offline." />
-  <link rel="stylesheet" href="./style.css" />
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Vice Pop Studio</title>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <div class="app-shell">
-
-    <header class="app-header">
-      <div class="brand">
-        <p class="brand-kicker">Cover Art Workshop</p>
-        <h1 class="brand-title">Vice Pop Studio</h1>
-        <p class="brand-tagline">Seven panels. One photo. A whole sunset worth of attitude.</p>
+  <div class="page">
+    <header class="masthead">
+      <div class="masthead-copy">
+        <p class="eyebrow">Cover Art Workshop</p>
+        <h1 class="title">Vice Pop Studio</h1>
+        <p class="tagline">Seven panels. One photo. A whole sunset worth of attitude.</p>
       </div>
-      <div class="header-badge" aria-hidden="true">
-        <span class="badge-line">VICE POP</span>
-        <span class="badge-line">EST. 2026</span>
+      <div class="seal-badge" aria-label="Vice Pop, established 2026">
+        <span class="seal-badge-line">Vice Pop</span>
+        <span class="seal-badge-line seal-badge-line--est">Est. 2026</span>
       </div>
     </header>
 
-    <main class="studio-layout">
-
-      <!-- Preview column: the live canvas plus a few helper hints -->
-      <section class="preview-column" aria-labelledby="preview-heading">
-        <div class="panel preview-panel">
-          <div class="panel-heading">
-            <h2 id="preview-heading">Poster Preview</h2>
-            <span class="panel-hint">540 × 540 · half scale</span>
-          </div>
-
-          <div class="canvas-frame">
-            <canvas id="poster" width="540" height="540" aria-label="Live preview of the generated cover art"></canvas>
-          </div>
-
-          <p class="preview-caption">
-            Your photo appears in the arched hero panel and in the six panels below.
-            Captions and tags are drawn directly onto the poster.
-          </p>
+    <main class="studio">
+      <section class="panel panel--preview" aria-labelledby="previewHeading">
+        <div class="panel-heading">
+          <h2 id="previewHeading" class="section-label">Poster Preview</h2>
+          <span class="preview-scale">540 x 540 - half scale</span>
         </div>
 
-        <div class="panel tips-panel">
-          <h2 class="tips-title">Quick tips</h2>
-          <ul class="tips-list">
-            <li>Upload two or three photos to spread them across the grid.</li>
-            <li>Short captions in all caps land hardest in chrome lettering.</li>
-            <li>Pick a grade, then export the size you need for your feed.</li>
-          </ul>
-        </div>
-      </section>
-
-      <!-- Controls column: upload, text, grades, size, tags, billing -->
-      <section class="controls-column" aria-labelledby="controls-heading">
-        <div class="panel controls-panel">
-          <div class="panel-heading">
-            <h2 id="controls-heading">Studio Controls</h2>
-          </div>
-
-          <form class="controls-form" autocomplete="off" onsubmit="return false;">
-
-            <!-- Photo upload -->
-            <div class="control-group">
-              <label class="control-label" for="photo-input">Photos</label>
-              <input
-                class="file-input"
-                id="photo-input"
-                name="photos"
-                type="file"
-                accept="image/*"
-                multiple
-              />
-              <p class="control-note">Images never leave this machine.</p>
-            </div>
-
-            <!-- Caption and subtitle -->
-            <div class="control-group">
-              <label class="control-label" for="caption-input">Caption</label>
-              <input
-                class="text-input text-input-hero"
-                id="caption-input"
-                name="caption"
-                type="text"
-                maxlength="48"
-                placeholder="LATE NIGHT VICE"
-              />
-            </div>
-
-            <div class="control-group">
-              <label class="control-label" for="subtitle-input">Subtitle</label>
-              <input
-                class="text-input"
-                id="subtitle-input"
-                name="subtitle"
-                type="text"
-                maxlength="64"
-                placeholder="A story in seven frames"
-              />
-            </div>
-
-            <!-- Colour grades -->
-            <fieldset class="control-group control-group-fieldset">
-              <legend class="control-label">Colour Grade</legend>
-              <div class="grade-row" role="group" aria-label="Colour grade">
-                <button type="button" class="grade-button is-active" data-grade="vice-sunset">Vice Sunset</button>
-                <button type="button" class="grade-button" data-grade="neon-night">Neon Night</button>
-                <button type="button" class="grade-button" data-grade="palm-dusk">Palm Dusk</button>
-                <button type="button" class="grade-button" data-grade="chrome-heat">Chrome Heat</button>
-                <button type="button" class="grade-button" data-grade="mono-noir">Mono Noir</button>
-              </div>
-            </fieldset>
-
-            <!-- Export sizes -->
-            <fieldset class="control-group control-group-fieldset">
-              <legend class="control-label">Export Size</legend>
-              <div class="export-row" role="group" aria-label="Export size">
-                <button type="button" class="export-button is-active" data-size="1080x1080">1080 × 1080</button>
-                <button type="button" class="export-button" data-size="1080x1350">1080 × 1350</button>
-                <button type="button" class="export-button" data-size="1920x1080">1920 × 1080</button>
-              </div>
-              <button type="button" class="export-action" id="export-button">Download PNG</button>
-            </fieldset>
-
-            <!-- Role tags -->
-            <fieldset class="control-group control-group-fieldset">
-              <legend class="control-label">Role Tags</legend>
-              <div class="tag-row" role="group" aria-label="Role tags">
-                <input class="text-input tag-input" id="tag-input-1" name="tag1" type="text" maxlength="14" placeholder="HERO" />
-                <input class="text-input tag-input" id="tag-input-2" name="tag2" type="text" maxlength="14" placeholder="ICON" />
-                <input class="text-input tag-input" id="tag-input-3" name="tag3" type="text" maxlength="14" placeholder="2026" />
-              </div>
-            </fieldset>
-
-            <!-- Billing line -->
-            <div class="control-group">
-              <label class="control-label" for="billing-input">Billing</label>
-              <input
-                class="text-input"
-                id="billing-input"
-                name="billing"
-                type="text"
-                maxlength="60"
-                placeholder="Starring you, obviously"
-              />
-            </div>
-
-          </form>
+        <div class="poster-frame">
+          <canvas id="poster" width="1080" height="1080" aria-label="Vice Pop poster preview"></canvas>
         </div>
 
-        <p class="offline-note">
-          Everything runs offline in this browser tab — no uploads, no accounts, no network requests.
-          Your photos stay on your machine.
+        <p class="preview-caption">
+          Your photo appears in the arched hero panel and in the six panels below.
+          Captions and tags are drawn directly onto the poster.
         </p>
       </section>
 
-    </main>
+      <section class="panel panel--controls" aria-labelledby="controlsHeading">
+        <div class="panel-heading">
+          <h2 id="controlsHeading" class="section-label">Studio Controls</h2>
+        </div>
 
-    <footer class="app-footer">
-      <p>Vice Pop Studio · a local cover-art toy for the make.fun bounty</p>
-    </footer>
+        <div class="control-group">
+          <label class="control-label" for="photoInput">Photos</label>
+          <input id="photoInput" class="file-input" type="file" accept="image/*">
+          <p class="control-note">Images never leave this machine.</p>
+        </div>
+
+        <div class="control-group">
+          <label class="control-label" for="captionInput">Caption</label>
+          <input id="captionInput" class="text-input" type="text" value="Boulevard Queen" autocomplete="off" spellcheck="false">
+        </div>
+
+        <div class="control-group">
+          <label class="control-label" for="subtitleInput">Subtitle</label>
+          <input id="subtitleInput" class="text-input" type="text" value="A story in seven frames" autocomplete="off" spellcheck="false">
+        </div>
+
+        <div class="control-group">
+          <span class="control-label" id="gradeLabel">Colour Grade</span>
+          <div class="pill-row" role="group" aria-labelledby="gradeLabel">
+            <button class="pill is-active" type="button" data-grade="vice-sunset" aria-pressed="true">Vice Sunset</button>
+            <button class="pill" type="button" data-grade="neon-night" aria-pressed="false">Neon Night</button>
+            <button class="pill" type="button" data-grade="palm-dusk" aria-pressed="false">Palm Dusk</button>
+            <button class="pill" type="button" data-grade="chrome-heat" aria-pressed="false">Chrome Heat</button>
+            <button class="pill" type="button" data-grade="mono-noir" aria-pressed="false">Mono Noir</button>
+          </div>
+        </div>
+
+        <div class="control-group">
+          <span class="control-label" id="sizeLabel">Export Size</span>
+          <div class="pill-row" role="group" aria-labelledby="sizeLabel">
+            <button class="pill is-active" type="button" data-size="1080x1080" aria-pressed="true">1080 &times; 1080</button>
+            <button class="pill" type="button" data-size="1080x1350" aria-pressed="false">1080 &times; 1350</button>
+            <button class="pill" type="button" data-size="1920x1080" aria-pressed="false">1920 &times; 1080</button>
+          </div>
+        </div>
+
+        <div class="action-row">
+          <button id="shuffleBtn" class="btn btn--shuffle" type="button">Shuffle layout</button>
+          <button id="exportBtn" class="btn btn--export" type="button">Export PNG</button>
+        </div>
+      </section>
+    </main>
   </div>
 
-  <script type="module" src="./src/main.js"></script>
+  <script type="module" src="src/main.js"></script>
 </body>
 </html>

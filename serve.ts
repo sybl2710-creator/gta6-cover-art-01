@@ -1,92 +1,35 @@
-// A small, dependency-free static server for previewing app/ locally.
-// It only serves files that physically live inside app/, answers HEAD without
-// a body, and rejects anything other than GET/HEAD. Directory requests fall
-// through to index.html so the offline studio behaves like a normal site.
+// Tiny static server for local previews: app/ on http://localhost:8080.
 import { createServer } from 'node:http';
-import { createReadStream, realpathSync, statSync } from 'node:fs';
-import { extname, join, normalize, resolve, sep } from 'node:path';
+import { readFile, stat } from 'node:fs/promises';
+import { extname, join, normalize, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const root = realpathSync(resolve(fileURLToPath(new URL('.', import.meta.url)), 'app'));
-
-const types = {
+const appDir = join(fileURLToPath(new URL('.', import.meta.url)), 'app');
+const types: Record<string, string> = {
   '.html': 'text/html; charset=utf-8',
-  '.js': 'text/javascript; charset=utf-8',
-  '.mjs': 'text/javascript; charset=utf-8',
   '.css': 'text/css; charset=utf-8',
-  '.json': 'application/json; charset=utf-8',
-  '.png': 'image/png',
+  '.js': 'text/javascript; charset=utf-8',
   '.jpg': 'image/jpeg',
   '.jpeg': 'image/jpeg',
-  '.gif': 'image/gif',
-  '.webp': 'image/webp',
-  '.svg': 'image/svg+xml',
+  '.png': 'image/png',
   '.ttf': 'font/ttf',
-  '.otf': 'font/otf',
-  '.woff': 'font/woff',
-  '.woff2': 'font/woff2',
-  '.txt': 'text/plain; charset=utf-8',
+  '.json': 'application/json; charset=utf-8',
 };
 
-const portArg = process.argv.indexOf('--port');
-const requested = portArg >= 0 ? Number(process.argv[portArg + 1]) : 8080;
-const port = Number.isInteger(requested) && requested > 0 && requested < 65536 ? requested : 8080;
-
-const send = (res, status, body, extra = {}) => {
-  res.writeHead(status, { 'content-type': 'text/plain; charset=utf-8', ...extra });
-  res.end(body);
-};
-
-const inside = (file) => file === root || file.startsWith(root + sep);
-
-createServer((req, res) => {
-  const method = req.method || 'GET';
-  if (method !== 'GET' && method !== 'HEAD') {
-    send(res, 405, 'Method not allowed', { allow: 'GET, HEAD' });
+createServer(async (req, res) => {
+  const url = new URL(req.url || '/', 'http://localhost');
+  const rel = normalize(decodeURIComponent(url.pathname)).replace(/^([/\\])+/, '');
+  const file = join(appDir, rel === '' || rel.endsWith(sep) ? join(rel, 'index.html') : rel);
+  if (file !== appDir && !file.startsWith(appDir + sep)) {
+    res.writeHead(404).end('Not found');
     return;
   }
-
-  let pathname = '/';
   try {
-    pathname = decodeURIComponent(new URL(req.url || '/', 'http://localhost').pathname);
+    if (!(await stat(file)).isFile()) throw new Error('not a file');
+    const body = await readFile(file);
+    res.writeHead(200, { 'content-type': types[extname(file).toLowerCase()] || 'application/octet-stream' });
+    res.end(body);
   } catch {
-    send(res, 400, 'Bad request');
-    return;
+    res.writeHead(404, { 'content-type': 'text/plain; charset=utf-8' }).end('Not found');
   }
-
-  const target = resolve(join(root, normalize(pathname)));
-  if (!inside(target)) {
-    send(res, 403, 'Forbidden');
-    return;
-  }
-
-  let file = target;
-  let info;
-  try {
-    info = statSync(file);
-    if (info.isDirectory()) {
-      file = join(file, 'index.html');
-      info = statSync(file);
-    }
-    file = realpathSync(file);
-    if (!inside(file) || !info.isFile()) throw new Error('not a file');
-  } catch {
-    send(res, 404, 'Not found');
-    return;
-  }
-
-  const headers = {
-    'content-type': types[extname(file).toLowerCase()] || 'application/octet-stream',
-    'content-length': String(info.size),
-    'cache-control': 'no-store',
-  };
-
-  res.writeHead(200, headers);
-  if (method === 'HEAD') {
-    res.end();
-    return;
-  }
-  createReadStream(file).on('error', () => res.destroy()).pipe(res);
-}).listen(port, () => {
-  console.log(`Vice Pop Studio is served from ${root} at http://localhost:${port}`);
-});
+}).listen(8080, () => console.log('Vice Pop Studio: http://localhost:8080'));

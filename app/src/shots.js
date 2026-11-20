@@ -1,130 +1,91 @@
-// Deep-link / screenshot support. A shot URL can preload a caption and a sample
-// photo, and can collapse the editor down to just the poster canvas:
-//
-//   index.html?shot=cover&photo=boulevard&caption=WELCOME%20TO%20VICE%20CITY
+const PHOTO_FILES = {
+  boulevard: '../samples/boulevard.jpg',
+  pier: '../samples/pier.jpg'
+};
 
-import { defaultFocus } from './crop.js';
-
-const SAMPLE_NAMES = new Set(['boulevard', 'pier']);
-const PANEL_IDS = ['hero', 'a', 'b', 'c', 'd', 'e', 'f'];
-
-export function applyShot(state, redraw) {
-  if (!state || typeof window === 'undefined') return;
-
-  let params;
-  try {
-    params = new URLSearchParams(window.location.search || '');
-  } catch (err) {
-    return;
+export const SHOTS = [
+  {
+    name: '1-cover',
+    photo: 'pier',
+    caption: 'Sunset Heist',
+    subtitle: 'A story in seven frames',
+    grade: 'vice-sunset',
+    size: { w: 1080, h: 1080 }
+  },
+  {
+    name: '2-editor',
+    photo: 'boulevard',
+    caption: 'Boulevard Queen',
+    subtitle: 'A story in seven frames',
+    grade: 'vice-sunset',
+    size: { w: 1080, h: 1080 }
+  },
+  {
+    name: '3-cover',
+    photo: 'boulevard',
+    caption: 'Boulevard Queen',
+    subtitle: 'A story in seven frames',
+    grade: 'vice-sunset',
+    size: { w: 1080, h: 1080 }
+  },
+  {
+    name: '4-cover',
+    photo: 'pier',
+    caption: 'Vice Pop',
+    subtitle: 'A story in seven frames',
+    grade: 'vice-sunset',
+    size: { w: 1080, h: 1350 }
   }
+];
 
-  // Batch every change into one repaint so the canvas never draws twice.
-  const paint = oncePerFrame(redraw);
-
-  const caption = params.get('caption');
-  if (caption !== null) applyCaption(state, caption);
-
-  const photo = normalizePhoto(params.get('photo'));
-  if (photo) applyPhoto(state, photo, paint);
-
-  const shot = params.get('shot');
-  if (shot !== null) applyShotClass(shot);
-
-  paint();
+function loadImage(src) {
+  return new Promise((resolve, reject) => {
+    const image = new Image();
+    image.decoding = 'async';
+    image.onload = () => {
+      image.onload = null;
+      image.onerror = null;
+      resolve(image);
+    };
+    image.onerror = () => {
+      image.onload = null;
+      image.onerror = null;
+      reject(new Error(`Could not load shot photo: ${src}`));
+    };
+    image.src = src;
+  });
 }
 
-function normalizePhoto(raw) {
-  if (raw === null) return null;
-  const name = raw.trim().toLowerCase().replace(/\.jpe?g$/, '');
-  return SAMPLE_NAMES.has(name) ? name : null;
-}
+/*
+ * applyShot(state) contract:
+ * Reads the ?shot= query parameter. For a matching SHOTS entry it resolves the
+ * sample path relative to this module, copies caption, subtitle, grade and size
+ * onto state, sets state.photoSrc and document.body.dataset.shot, loads the
+ * photo into state.photo, and resolves to true once the image is ready. With
+ * no match it leaves state alone and resolves to false. main.js awaits this
+ * before its first render.
+ */
+export async function applyShot(state) {
+  if (!state) return false;
 
-function applyShotClass(shot) {
-  const body = document.body;
-  if (!body || !body.classList) return;
-  if (shot === 'cover') body.classList.add('shot-cover');
-  else body.classList.remove('shot-cover');
-}
+  const shotName = new URLSearchParams(window.location.search).get('shot');
+  const shot = shotName ? SHOTS.find((item) => item.name === shotName) : null;
 
-function applyCaption(state, caption) {
-  state.caption = caption;
+  if (!shot) return false;
 
-  const input = document.getElementById('caption-input');
-  if (!input) return;
+  const photoPath = PHOTO_FILES[shot.photo];
+  if (!photoPath) return false;
 
-  input.value = caption;
-  try {
-    input.dispatchEvent(new Event('input', { bubbles: true }));
-  } catch (err) {
-    // Engines without constructable Events still get the updated value.
-  }
-}
+  const photoSrc = new URL(photoPath, import.meta.url).href;
 
-function applyPhoto(state, name, paint) {
-  if (typeof Image === 'undefined') return;
+  state.photoSrc = photoSrc;
+  state.caption = shot.caption;
+  state.subtitle = shot.subtitle;
+  state.grade = shot.grade;
+  state.size = { w: shot.size.w, h: shot.size.h };
 
-  const img = new Image();
-  img.decoding = 'async';
+  if (document.body) document.body.dataset.shot = shot.name;
 
-  img.onload = () => {
-    state.photos = state.photos || {};
-    putPhoto(state.photos, 'hero', img);
-
-    // Fill only the slots that are still blank, leaving the user's own
-    // photos alone when a shot URL is opened on top of an existing edit.
-    for (const id of PANEL_IDS) {
-      if (id === 'hero') continue;
-      if (isEmptySlot(state.photos, id)) putPhoto(state.photos, id, img);
-    }
-
-    // A shot always starts from the standard framing so captures repeat.
-    if (typeof defaultFocus === 'function') state.focus = defaultFocus();
-
-    paint();
-  };
-
-  img.onerror = () => {
-    // A missing sample must never break the editor.
-  };
-
-  img.src = `samples/${name}.jpg`;
-}
-
-function putPhoto(photos, id, img) {
-  if (Array.isArray(photos)) photos[indexOf(id)] = img;
-  else photos[id] = img;
-}
-
-function isEmptySlot(photos, id) {
-  if (Array.isArray(photos)) return !photos[indexOf(id)];
-  return !photos[id];
-}
-
-function indexOf(id) {
-  const i = PANEL_IDS.indexOf(id);
-  return i < 0 ? 0 : i;
-}
-
-// Collapse back-to-back redraw requests into a single call per animation frame.
-function oncePerFrame(redraw) {
-  if (typeof redraw !== 'function') return () => {};
-
-  let queued = false;
-  const schedule =
-    typeof window !== 'undefined' && typeof window.requestAnimationFrame === 'function'
-      ? window.requestAnimationFrame.bind(window)
-      : (fn) => setTimeout(fn, 16);
-
-  return () => {
-    if (queued) return;
-    queued = true;
-    schedule(() => {
-      queued = false;
-      try {
-        redraw();
-      } catch (err) {
-        // Keep a bad frame from wedging the queue.
-      }
-    });
-  };
+  state.photo = await loadImage(photoSrc);
+  return true;
 }

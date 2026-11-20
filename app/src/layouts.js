@@ -1,50 +1,98 @@
-// Panel geometry for the seven-panel cover. All numbers are fractions of the
-// poster width/height, so the same layout works at any export size.
-//
-//  +--------------------------------------------------+
-//  |                      hero                        |  ~52%
-//  +--------------------------------------------------+
-//  |    a     |     b     |     c     |
-//  |    d     |     e     |     f     |
-//  +--------------------------------------------------+
-
-const GAP = 0.018;            // ~1.8% breathing room between panels
-const HERO_H = 0.52;          // hero occupies the top 52%
-const SIDE = 0.024;           // outer margin
-const SMALL = (1 - SIDE * 2 - GAP * 2) / 3;
-
-function smallPanel(id, column, row) {
-  return {
-    id,
-    x: SIDE + column * (SMALL + GAP),
-    y: HERO_H + GAP + row * (rowHeight() + GAP),
-    w: SMALL,
-    h: rowHeight(),
-    arch: false,
-  };
-}
-
-function rowHeight() {
-  // Remaining band after hero, gap, and bottom margin, split in two rows.
-  return (1 - HERO_H - GAP - GAP - SIDE) / 2;
-}
-
 export const LAYOUTS = [
   {
-    id: 'seven-panel',
-    name: 'Seven Panel',
-    panels: [
-      { id: 'hero', x: 0, y: 0, w: 1, h: HERO_H, arch: true },
-      smallPanel('a', 0, 0),
-      smallPanel('b', 1, 0),
-      smallPanel('c', 2, 0),
-      smallPanel('d', 0, 1),
-      smallPanel('e', 1, 1),
-      smallPanel('f', 2, 1),
+    name: 'Classic Grid',
+    heroArch: 0.30,
+    tilt: 1.2,
+    gap: 18,
+    offsets: [
+      { dx: 0, dy: 0 },
+      { dx: 2, dy: -1 },
+      { dx: -2, dy: 1 },
+      { dx: 1, dy: 2 },
+      { dx: -1, dy: -2 },
+      { dx: 0, dy: 0 },
+    ],
+  },
+  {
+    name: 'Hand Placed',
+    heroArch: 0.42,
+    tilt: 2.6,
+    gap: 22,
+    offsets: [
+      { dx: -4, dy: 3 },
+      { dx: 5, dy: -2 },
+      { dx: -3, dy: -4 },
+      { dx: 4, dy: 4 },
+      { dx: -5, dy: 1 },
+      { dx: 2, dy: -3 },
+    ],
+  },
+  {
+    name: 'Postcard Scatter',
+    heroArch: 0.24,
+    tilt: 3.4,
+    gap: 26,
+    offsets: [
+      { dx: 6, dy: -3 },
+      { dx: -5, dy: 4 },
+      { dx: 3, dy: 5 },
+      { dx: -6, dy: -2 },
+      { dx: 4, dy: -5 },
+      { dx: -2, dy: 3 },
+    ],
+  },
+  {
+    name: 'Magazine Drift',
+    heroArch: 0.50,
+    tilt: 1.8,
+    gap: 14,
+    offsets: [
+      { dx: 3, dy: 2 },
+      { dx: -2, dy: 3 },
+      { dx: 1, dy: -2 },
+      { dx: -3, dy: -3 },
+      { dx: 2, dy: 1 },
+      { dx: 0, dy: 0 },
+    ],
+  },
+  {
+    name: 'Neon Bounce',
+    heroArch: 0.36,
+    tilt: 2.2,
+    gap: 20,
+    offsets: [
+      { dx: -2, dy: -4 },
+      { dx: 4, dy: 2 },
+      { dx: -3, dy: 3 },
+      { dx: 2, dy: -3 },
+      { dx: -4, dy: 4 },
+      { dx: 3, dy: 1 },
+    ],
+  },
+  {
+    name: 'Tight Stack',
+    heroArch: 0.18,
+    tilt: 0.9,
+    gap: 10,
+    offsets: [
+      { dx: 0, dy: 0 },
+      { dx: 1, dy: 1 },
+      { dx: -1, dy: -1 },
+      { dx: 1, dy: -1 },
+      { dx: -1, dy: 1 },
+      { dx: 0, dy: 0 },
     ],
   },
 ];
 
-export function layoutById(id) {
-  return LAYOUTS.find((layout) => layout.id === id) || LAYOUTS[0];
+export function layoutByIndex(i) {
+  const count = LAYOUTS.length;
+  let index = Number(i);
+  if (!Number.isFinite(index)) index = 0;
+  index = ((Math.trunc(index) % count) + count) % count;
+  return LAYOUTS[index];
+}
+
+export function shuffleLayout() {
+  return Math.floor(Math.random() * LAYOUTS.length);
 }

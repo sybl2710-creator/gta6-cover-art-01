@@ -1,28 +1,7 @@
-Copyright (c) 2012 Red Hat, Inc.
-Copyright (c) 2010 Google Corporation
-       with Reserved Font Name Arimo.
-Copyright (c) 2012 Google Corporation
-       with Reserved Font Name Arimo.
-Copyright (c) 2007-2010 Google Corporation
-       with Reserved Font Name Droid Sans.
-Copyright (c) 2010 Google Corporation
-       with Reserved Font Name Tinos.
-Copyright (c) 2007-2010 Google Corporation
-       with Reserved Font Name Droid Serif.
-Copyright (c) 2012 Google Corporation
-       with Reserved Font Name Tinos.
-Copyright (c) 2010 Google Corporation
-       with Reserved Font Name Cousine.
-Copyright (c) 2010 Google Corporation
-       with Reserved Font Name Cousine.
+This licence covers the Liberation Sans fonts bundled in this directory
+(LiberationSans-Regular.ttf and LiberationSans-Bold.ttf).
 
-This Font Software is licensed under the SIL Open Font License, Version 1.1.
-This license is copied below, and is also available with a FAQ at:
-https://openfontlicense.org
-
------------------------------------------------------------
 SIL OPEN FONT LICENSE Version 1.1 - 26 February 2007
------------------------------------------------------------
 
 PREAMBLE
 The goals of the Open Font License (OFL) are to stimulate worldwide

@@ -1,6 +1,5 @@
-// Builds the submission bundle for Vice Pop Studio. It copies the offline
-// app and its screenshots into an output directory, then asks the make.fun
-// helper to inspect that output and write dossier.json beside it.
+// Builds the Vice Pop Studio hand-in bundle: the offline app, its four
+// screenshots and the make.fun dossier, all copied into one output directory.
 import { cpSync, existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -12,11 +11,9 @@ const out = process.env.MAKEFUN_OUTPUT_DIR || '/output';
 mkdirSync(out, { recursive: true });
 cpSync(join(root, 'app'), join(out, 'app'), { recursive: true });
 
-const shotsOut = join(out, 'screenshots');
-mkdirSync(shotsOut, { recursive: true });
 const shotsIn = join(root, 'screenshots');
 if (existsSync(shotsIn)) {
-  cpSync(shotsIn, shotsOut, { recursive: true });
+  cpSync(shotsIn, join(out, 'screenshots'), { recursive: true });
 }
 
 const dossier = buildDossier(out, {
@@ -27,9 +24,5 @@ const dossier = buildDossier(out, {
   app_path_max_bytes: 1000,
 });
 
-writeFileSync(
-  join(out, 'dossier.json'),
-  typeof dossier === 'string' ? dossier : JSON.stringify(dossier, null, 2) + '\n',
-);
-
+writeFileSync(join(out, 'dossier.json'), dossier);
 console.log(`Vice Pop Studio built into ${out} (app, screenshots, dossier.json).`);
